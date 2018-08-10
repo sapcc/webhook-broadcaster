@@ -20,11 +20,11 @@ type resource struct {
 }
 
 var (
-	repositoryMap map[string][]resource
-	listenAddr    string
-	concourseURL  string
-	authUser      string
-	authPassword  string
+	listenAddr      string
+	concourseURL    string
+	authUser        string
+	authPassword    string
+	refreshInterval time.Duration
 )
 
 func init() {
@@ -32,6 +32,7 @@ func init() {
 	flag.StringVar(&concourseURL, "concourse-url", "", "External URL of the concourse api")
 	flag.StringVar(&authUser, "auth-user", "", "Basic auth concourse username")
 	flag.StringVar(&authPassword, "auth-password", "", "Basic auth concourse password")
+	flag.DurationVar(&refreshInterval, "refresh-interval", 5*time.Minute, "Resource refresh interval")
 }
 
 func main() {
@@ -53,7 +54,7 @@ func main() {
 			} else {
 				log.Printf("Failed to authenticate to %s: %s", concourseURL, err)
 			}
-			time.Sleep(1 * time.Minute)
+			time.Sleep(refreshInterval)
 		}
 	}()
 
