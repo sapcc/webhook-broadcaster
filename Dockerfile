@@ -1,4 +1,4 @@
 FROM alpine
 
-CMD apk add --no-cache curl
+RUN apk add --no-cache curl
 ADD bin/linux/webhook-broadcaster /usr/local/bin/
