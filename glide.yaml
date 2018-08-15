@@ -1,2 +1,10 @@
-package: github.com/sapcc/webhook-ingester
-import: []
+package: github.com/sapcc/webhook-broadcaster
+import:
+ - package: github.com/concourse/go-concourse
+   version: c66d72ec9071240ee638c21a9ef2717d89d0ff58
+ - package: github.com/concourse/atc
+   version: 417df38e13cd629d5b313b74c49bdd963f8197a3
+ - package: k8s.io/client-go
+   version: release-8.0
+   subpackages:
+     - util/workqueue

@@ -18,8 +18,8 @@ type Pipeline struct {
 }
 
 var (
-	mu            sync.Mutex
-	resourceCache = map[int]Pipeline{}
+	//resourceCache = map[int]Pipeline{}
+	resourceCache sync.Map
 )
 
 func UpdateCache(client concourse.Client) error {
@@ -35,14 +35,14 @@ func UpdateCache(client concourse.Client) error {
 	}
 
 	//delete removed pipelines from cache
-	mu.Lock()
-	for pipelineID, _ := range resourceCache {
+	resourceCache.Range(func(key, _ interface{}) bool {
+		pipelineID := key.(int)
 		if cachedPipeline, found := pipelinesByID[pipelineID]; !found {
 			log.Printf("Removing pipeline %s from cache", cachedPipeline.Name)
-			delete(resourceCache, pipelineID)
+			resourceCache.Delete(pipelineID)
 		}
-	}
-	mu.Unlock()
+		return true
+	})
 
 	//update pipeline cache
 	for _, pipeline := range pipelines {
@@ -52,11 +52,9 @@ func UpdateCache(client concourse.Client) error {
 			continue
 		}
 		if found {
-			mu.Lock()
-			cachedPipeline, inCache := resourceCache[pipeline.ID]
-			mu.Unlock()
+			cachedPipeline, inCache := resourceCache.Load(pipeline.ID)
 			//add or replace cache for pipeline
-			if !inCache || cachedPipeline.Version != version {
+			if !inCache || cachedPipeline.(Pipeline).Version != version {
 				newCacheObj := Pipeline{
 					ID:      pipeline.ID,
 					Name:    pipeline.Name,
@@ -70,28 +68,22 @@ func UpdateCache(client concourse.Client) error {
 					}
 					newCacheObj.Resources = append(newCacheObj.Resources, resource)
 				}
-				mu.Lock()
-				resourceCache[pipeline.ID] = newCacheObj
-				mu.Unlock()
-				log.Printf("Updated cache for pipeline %s, version %s, got %d resources with webhook tokens", pipeline.Name, version, len(newCacheObj.Resources))
+				resourceCache.Store(pipeline.ID, newCacheObj)
+				log.Printf("New version detected for pipeline %s. Found %d resource(s) that have a webhook token.", pipeline.Name, len(newCacheObj.Resources))
 			}
 		}
 	}
 	return nil
 }
 
-func ScanResourceCache(walkFn func(pipeline Pipeline, resource atc.ResourceConfig) (bool, error)) error {
-	mu.Lock()
-	defer mu.Unlock()
-	for _, pipeline := range resourceCache {
+func ScanResourceCache(walkFn func(pipeline Pipeline, resource atc.ResourceConfig) bool) {
+	resourceCache.Range(func(_, val interface{}) bool {
+		pipeline := val.(Pipeline)
 		for _, resource := range pipeline.Resources {
-			mu.Unlock()
-			stop, err := walkFn(pipeline, resource)
-			mu.Lock()
-			if stop || err != nil {
-				return err
+			if !walkFn(pipeline, resource) {
+				return false
 			}
 		}
-	}
-	return nil
+		return true
+	})
 }

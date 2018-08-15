@@ -1,8 +1,8 @@
 PKG:=github.com/sapcc/webhook-broadcaster
 IMAGE:=sapcc/concourse-webhook-broadcaster
-VERSION:=0.1
+VERSION:=0.4.0
 build:
-	go build -o bin/webhook-broadcaster $(PKG)
+	go build -v -o bin/webhook-broadcaster $(PKG)
 
 docker:
 	go test -v
