@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -95,12 +96,15 @@ func (c *RequestWorkqueue) processNextWorkItem() bool {
 
 }
 
+var tokenRegexp = regexp.MustCompile(`webhook_token=[^&]+`)
+
 func (c *RequestWorkqueue) perform(url string) error {
-	log.Printf("Calling POST %s", url)
+	redactedURL := tokenRegexp.ReplaceAllString(url, "webhook_token=[REDACTED]")
+	log.Printf("Calling POST %s", redactedURL)
 	response, err := http.Post(url, "", nil)
 	if err != nil || response.StatusCode >= 400 {
 		return fmt.Errorf("Request failed. URL: %s, response: %s Error: %v",
-			url,
+			redactedURL,
 			response.Status,
 			err,
 		)
