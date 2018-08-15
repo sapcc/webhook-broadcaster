@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync/atomic"
 
 	"github.com/concourse/atc"
 )
@@ -37,7 +36,6 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 
 	log.Printf("Received webhhook for %s", pushEvent.Repository.CloneURL)
 
-	var notifyCount uint32
 	ScanResourceCache(func(pipeline Pipeline, resource atc.ResourceConfig) bool {
 		if resource.Type != "git" {
 			return true
@@ -52,7 +50,6 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 					resource.WebhookToken,
 				)
 				gh.queue.Add(webhookURL)
-				atomic.AddUint32(&notifyCount, 1)
 			}
 		}
 		return true
