@@ -34,6 +34,15 @@ func init() {
 
 type prometheusMetricsProvider struct{}
 
+//convert stupid microsecond intervals to seconds
+type summaryWrapper struct {
+	metric workqueue.SummaryMetric
+}
+
+func (s *summaryWrapper) Observe(o float64) {
+	s.metric.Observe(o / 1000000.0)
+}
+
 func (_ prometheusMetricsProvider) NewDepthMetric(name string) workqueue.GaugeMetric {
 	depth := prometheus.NewGauge(prometheus.GaugeOpts{
 		Subsystem: name,
@@ -57,23 +66,23 @@ func (_ prometheusMetricsProvider) NewAddsMetric(name string) workqueue.CounterM
 func (_ prometheusMetricsProvider) NewLatencyMetric(name string) workqueue.SummaryMetric {
 	latency := prometheus.NewHistogram(prometheus.HistogramOpts{
 		Subsystem: name,
-		Name:      "queue_latency",
+		Name:      "queue_latency_seconds",
 		Help:      "How long an item stays in workqueue" + name + " before being requested.",
 		Buckets:   []float64{.5, 1, 2.5, 5, 10, 30, 60, 120, 300},
 	})
 	prometheus.Register(latency)
-	return latency
+	return &summaryWrapper{latency}
 }
 
 func (_ prometheusMetricsProvider) NewWorkDurationMetric(name string) workqueue.SummaryMetric {
 	workDuration := prometheus.NewHistogram(prometheus.HistogramOpts{
 		Subsystem: name,
-		Name:      "work_duration",
-		Help:      "How long processing an item from workqueue" + name + " takes.",
+		Name:      "work_duration_seconds",
+		Help:      "How long processing an item from workqueue " + name + " takes.",
 		Buckets:   []float64{.5, 1, 2.5, 5, 10, 20, 40, 60, 120},
 	})
 	prometheus.Register(workDuration)
-	return workDuration
+	return &summaryWrapper{workDuration}
 }
 
 func (_ prometheusMetricsProvider) NewRetriesMetric(name string) workqueue.CounterMetric {
