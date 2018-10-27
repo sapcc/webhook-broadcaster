@@ -1,77 +1,56 @@
 package main
 
 import (
-	"crypto/tls"
-	"crypto/x509"
-	"net"
+	"context"
 	"net/http"
+	"net/url"
 	"time"
 
-	"github.com/concourse/atc"
+	"github.com/concourse/concourse/go-concourse/concourse"
 	"golang.org/x/oauth2"
 )
 
-func defaultHttpClient(token *atc.AuthToken, insecure bool, caCertPool *x509.CertPool) *http.Client {
-	var oAuthToken *oauth2.Token
-	if token != nil {
-		oAuthToken = &oauth2.Token{
-			TokenType:   token.Type,
-			AccessToken: token.Value,
-		}
+/* NewHttpClient creates an HTTP client that can refresh its oauth2 AccessToken */
+func NewHttpClient(concourseURL string, username string, password string) (*http.Client, error) {
+	tokenEndPoint, err := url.Parse("sky/token")
+	if err != nil {
+		return nil, err
 	}
 
-	transport := transport(insecure, caCertPool)
-
-	if token != nil {
-		transport = &oauth2.Transport{
-			Source: oauth2.StaticTokenSource(oAuthToken),
-			Base:   transport,
-		}
+	base, err := url.Parse(concourseURL)
+	if err != nil {
+		return nil, err
 	}
 
-	return &http.Client{Transport: transport}
-}
+	tokenURL := base.ResolveReference(tokenEndPoint)
 
-func basicAuthHttpClient(
-	username string,
-	password string,
-	insecure bool,
-	caCertPool *x509.CertPool,
-) *http.Client {
-	return &http.Client{
-		Transport: basicAuthTransport{
-			username: username,
-			password: password,
-			base:     transport(insecure, caCertPool),
-		},
-	}
-}
-
-func transport(insecure bool, caCertPool *x509.CertPool) http.RoundTripper {
-	var transport http.RoundTripper
-
-	transport = &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: insecure,
-			RootCAs:            caCertPool,
-		},
-		Dial: (&net.Dialer{
-			Timeout: 10 * time.Second,
-		}).Dial,
-		Proxy: http.ProxyFromEnvironment,
+	/* We leverage the fact that `fly` is considered a "public client" to fetch our oauth token */
+	oauth2Config := oauth2.Config{
+		ClientID:     "fly",
+		ClientSecret: "Zmx5",
+		Endpoint:     oauth2.Endpoint{TokenURL: tokenURL.String()},
+		Scopes:       []string{"openid", "profile", "email", "federated:id", "groups"},
 	}
 
-	return transport
+	httpClient := &http.Client{Timeout: 2 * time.Second}
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, &httpClient)
+
+	token, err := oauth2Config.PasswordCredentialsToken(ctx, username, password)
+	if err != nil {
+		return nil, err
+	}
+
+	return oauth2Config.Client(ctx, token), nil
 }
 
-type basicAuthTransport struct {
-	username string
-	password string
+/* NewConcourseClient creates a Concourse client */
+func NewConcourseClient(concourseURL string, username string, password string) (*concourse.Client, error) {
+	httpClient, err := NewHttpClient(concourseURL, username, password)
+	if err != nil {
+		return nil, err
+	}
 
-	base http.RoundTripper
-}
+	client := concourse.NewClient(concourseURL, httpClient, false)
 
-func (t basicAuthTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-	r.SetBasicAuth(t.username, t.password)
-	return t.base.RoundTrip(r)
+	return &client, nil
 }

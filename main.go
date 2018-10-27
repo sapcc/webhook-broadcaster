@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/concourse/go-concourse/concourse"
 	"github.com/oklog/run"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -51,8 +50,10 @@ func main() {
 		log.Fatal("Missing one or more of required flags: -concourse-url -auth-user -auth-password")
 	}
 
-	bc := basicAuthHttpClient(authUser, authPassword, false, nil)
-	basicAuthClient := concourse.NewClient(concourseURL, bc, false)
+	concourseClient, err := NewConcourseClient(concourseURL, authUser, authPassword)
+	if err != nil {
+		log.Fatalf("Failed to create Concourse client")
+	}
 
 	var group run.Group
 
@@ -79,13 +80,7 @@ func main() {
 		tick := time.NewTicker(refreshInterval)
 		defer tick.Stop()
 		for {
-			// Todo: reuse token
-			if token, err := basicAuthClient.Team("main").AuthToken(); err == nil {
-				client := concourse.NewClient(concourseURL, defaultHttpClient(&token, false, nil), false)
-				UpdateCache(client)
-			} else {
-				log.Printf("Failed to authenticate to %s: %s", concourseURL, err)
-			}
+			UpdateCache(*concourseClient)
 			select {
 			case <-tick.C:
 			case <-cancelCache:
