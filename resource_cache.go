@@ -38,7 +38,7 @@ func UpdateCache(client concourse.Client) error {
 	resourceCache.Range(func(key, _ interface{}) bool {
 		pipelineID := key.(int)
 		if cachedPipeline, found := pipelinesByID[pipelineID]; !found {
-			log.Printf("Removing pipeline %s from cache", cachedPipeline.Name)
+			log.Printf("Removing pipeline %s/%s from cache", cachedPipeline.TeamName, cachedPipeline.Name)
 			resourceCache.Delete(pipelineID)
 		}
 		return true
@@ -48,7 +48,7 @@ func UpdateCache(client concourse.Client) error {
 	for _, pipeline := range pipelines {
 		config, _, version, found, err := client.Team(pipeline.TeamName).PipelineConfig(pipeline.Name)
 		if err != nil {
-			log.Printf("Failed to get pipeline %s: %s", pipeline.Name, err)
+			log.Printf("Failed to get pipeline %s/%s: %s", pipeline.TeamName, pipeline.Name, err)
 			continue
 		}
 		if found {
@@ -69,7 +69,7 @@ func UpdateCache(client concourse.Client) error {
 					newCacheObj.Resources = append(newCacheObj.Resources, resource)
 				}
 				resourceCache.Store(pipeline.ID, newCacheObj)
-				log.Printf("New version detected for pipeline %s. Found %d resource(s) that have a webhook token.", pipeline.Name, len(newCacheObj.Resources))
+				log.Printf("New version detected for pipeline %s/%s. Found %d resource(s) that have a webhook token.", pipeline.TeamName, pipeline.Name, len(newCacheObj.Resources))
 			}
 		}
 	}
