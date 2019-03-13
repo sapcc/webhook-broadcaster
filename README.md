@@ -53,7 +53,7 @@ Usage
 2. Create a github webhook for push events pointing it to `http://webhook-broadcaster.somewhere:8080/github`
 3. Make sure resources of type `git` have a `webhook_token` configured
 
-Caveats
-=======
-* This is only tested to work with concourse version `3.14.1`. Pretty sure that its not working for version `>=4.0.0` yet due the auth changes in concourse.
+Compatibility
+=============
+* webhook-broadcaster should work with concourse `>=4.x`. There is a branch https://github.com/sapcc/webhook-broadcaster/tree/concourse-3.x that supports concourse `3.x`.
 * The broadcaster only supports github webhooks yet. Adding different types of webhooks, even for resources of different types should be simple (PRs welcome).
