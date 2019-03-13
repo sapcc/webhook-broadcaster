@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/concourse/atc"
+	"github.com/concourse/concourse/atc"
 )
 
 type GithubWebhookHandler struct {
@@ -37,7 +37,7 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 	log.Printf("Received webhhook for %s", pushEvent.Repository.CloneURL)
 
 	ScanResourceCache(func(pipeline Pipeline, resource atc.ResourceConfig) bool {
-		if resource.Type != "git" {
+		if resource.Type != "git" && resource.Type != "pull-request" {
 			return true
 		}
 		if uri, ok := resource.Source["uri"].(string); ok {

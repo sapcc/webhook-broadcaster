@@ -5,8 +5,8 @@ import (
 	"log"
 	"sync"
 
-	"github.com/concourse/atc"
-	"github.com/concourse/go-concourse/concourse"
+	"github.com/concourse/concourse/atc"
+	"github.com/concourse/concourse/go-concourse/concourse"
 )
 
 type Pipeline struct {
