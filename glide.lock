@@ -1,5 +1,5 @@
-hash: e0a7404f564f2ce80b6400d541be5008a8c9994140de68f48f1a0f55a5ce14d3
-updated: 2019-03-11T14:07:18.425944689+01:00
+hash: e95a3ae1b1757ab977f2fdd3ccf3e90790a305041c793ce6ab85985040ba6bbe
+updated: 2019-03-13T11:01:23.71334568+01:00
 imports:
 - name: github.com/beorn7/perks
   version: 4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9
@@ -7,8 +7,6 @@ imports:
   - quantile
 - name: github.com/bmizerany/pat
   version: 6226ea591a40176dd3ff9cd8eff81ed6ca721a00
-- name: github.com/concourse/atc
-  version: 417df38e13cd629d5b313b74c49bdd963f8197a3
 - name: github.com/concourse/concourse
   version: 5fbc955361340543932f4bd32f58a6b2ce6d5e69
   subpackages:
@@ -17,8 +15,6 @@ imports:
   - go-concourse/concourse
   - go-concourse/concourse/eventstream
   - go-concourse/concourse/internal
-- name: github.com/concourse/go-concourse
-  version: c66d72ec9071240ee638c21a9ef2717d89d0ff58
 - name: github.com/golang/glog
   version: 44145f04b68cf362d9c4df2182967c2275eaefed
 - name: github.com/golang/protobuf
