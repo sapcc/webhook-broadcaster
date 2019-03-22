@@ -37,10 +37,16 @@ resource_types:
       repository: teliaoss/github-pr-resource
       tag: latest
 
-  - name: concourse-metadata
+  - name: helm
     type: docker-image
     source:
-      repository: swce/metadata-resource
+      repository: linkyard/concourse-helm-resource
+      tag: '2.12.2'
+
+  - name: slack-notification
+    type: docker-image
+    source:
+      repository: cfcommunity/slack-notification-resource
       tag: latest
 
   - name: github-webhook
@@ -76,6 +82,28 @@ resources:
       username: ((gcr-username))
       password: ((gcr-password))
 
+  - name: config
+    type: git
+    source:
+      uri: git@github.com:optiopay/infrastructure.git
+      branch: master
+      private_key: ((github-optiobot-private-key))
+      git_config:
+        - name: "url.git@github.com:.insteadof"
+          value: "https://github.com/"
+      paths:
+        - 'environments/kubernetes/namespaces/ci/webhook-broadcaster-*'
+
+  - name: helm
+    type: helm
+    check_every: 8760h
+    source:
+      cluster_url: ((k8s-gpp-prod-cluster-url))
+      cluster_ca: ((k8s-gpp-prod-cluster-ca))
+      token: ((k8s-gpp-prod-kube-system-kube-token))
+      tiller_namespace: kube-system
+      namespace: ci
+      release: webhook-broadcaster
 
   - name: pull-request
     type: pull-request
@@ -88,59 +116,11 @@ resources:
         - ci/pipeline-metadata.json
     webhook_token: ((concourse-webhook-token))
 
-  - name: concourse-metadata
-    type: concourse-metadata
-    check_every: 8760h
-
-  - name: concourse-generate-pipeline-dockerimage
-    type: docker-image
-    check_every: 1h
-    source:
-      repository: eu.gcr.io/optiopay/concourse-generate-pipeline
-      tag: latest
-      username: ((gcr-username))
-      password: ((gcr-password))
-
-  - name: concourse-pipeline-config
-    type: git
-    check_every: 1h
-    source:
-      uri: git@github.com:optiopay/webhook-broadcaster.git
-      branch: master
-      private_key: ((github-optiobot-private-key))
-      git_config:
-        - name: "url.git@github.com:.insteadof"
-          value: "https://github.com/"
-      paths:
-        - ci/pipeline.yml
-        - ci/pipeline-generator.yml
-        - ci/pipeline-metadata.json
-    webhook_token: ((concourse-webhook-token))
-
-
-  - name: pull-request-concourse-pipeline-config
-    type: pull-request
-    source:
-      access_token: ((github-optiobot-access-token))
-      repository: optiopay/webhook-broadcaster
-      paths:
-        - ci/pipeline.yml
-        - ci/pipeline-generator.yml
-        - ci/pipeline-metadata.json
-    webhook_token: ((concourse-webhook-token))
-
-  - name: concourse-pipeline-tool
-    type: git
+  - name: slack-notification
+    type: slack-notification
     check_every: 8760h
     source:
-      uri: git@github.com:optiopay/infrastructure.git
-      branch: master
-      private_key: ((github-optiobot-private-key))
-      git_config:
-        - name: "url.git@github.com:.insteadof"
-          value: "https://github.com/"
-      paths:
-        - bin/concourse-set-pipeline
+      url: ((slack-notifications-webhook))
 
   - name: concourse-github-webhook
     type: github-webhook
@@ -198,6 +178,153 @@ jobs:
       build_args_file: tags/build_args
     get_params:
       skip_download: true
+    attempts: 0
+    timeout: 1h
+
+- name: deploy
+  build_logs_to_retain: 50
+  on_success:
+    do:
+      - put: slack-notification
+        params:
+          channel: "#ops"
+          text_file: slack-messages/success
+          attachments_file: slack-messages/actions
+        attempts: 0
+        timeout: 1h
+  on_failure:
+    do:
+      - put: slack-notification
+        params:
+          channel: "#ops"
+          text_file: slack-messages/failure
+          attachments_file: slack-messages/actions
+        attempts: 0
+        timeout: 1h
+  plan:
+
+  - aggregate:
+
+    - get: repository
+      passed: [ master-build ]
+      trigger: true
+      params:
+        depth: 1
+      attempts: 0
+      timeout: 1h
+
+    - get: config
+      trigger: true
+      params:
+        # it's the infrastructure repo and there's a path filter, so very likely
+        # there are other commits on top
+        depth: 200
+      attempts: 0
+      timeout: 1h
+
+  - aggregate:
+
+    - do:
+
+      - task: extract-tags
+        config:
+          inputs:
+            - name: git-repo
+          outputs:
+            - name: tags
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: eu.gcr.io/optiopay/concourse-docker-tags
+              tag: latest
+              username: ((gcr-username))
+              password: ((gcr-password))
+          run:
+            path: /concourse-docker-tags
+            args:
+              - --input
+              - git-repo
+              - --output
+              - tags
+        attempts: 0
+        timeout: 1h
+        input_mapping:
+          git-repo: repository
+
+      - task: prepare-slack-messages
+        config:
+          inputs:
+            - name: tags
+          outputs:
+            - name: slack-messages
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: eu.gcr.io/optiopay/concourse-slack-message
+              tag: latest
+              username: ((gcr-username))
+              password: ((gcr-password))
+          run:
+            path: /concourse-slack-message
+            args:
+              - --input
+              - tags
+              - --output
+              - slack-messages
+              - --environment
+              - ci
+              - --project-name
+              - webhook-broadcaster
+              - --webapp-url-file
+              - config/environments/kubernetes/namespaces/ci/webhook-broadcaster-webapp-url.txt
+        attempts: 0
+        timeout: 1h
+
+    - task: decrypt-secrets
+      config:
+        inputs:
+          - name: config
+        outputs:
+          - name: decrypted-config
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: eu.gcr.io/optiopay/secrets
+            tag: latest
+            username: ((gcr-username))
+            password: ((gcr-password))
+        params:
+          PRIVATE_KEY: ((secrets-private-key))
+          SOPS_CONF_DIR: config
+        run:
+          path: /bin/bash
+          args:
+            - -ec
+            - |
+              /crypt -d config/environments/kubernetes/namespaces/ci/webhook-broadcaster-secrets.yml
+              mv config/environments/kubernetes/namespaces/ci/webhook-broadcaster-* decrypted-config
+      attempts: 0
+      timeout: 1h
+
+  - put: helm
+    params:
+      # check that the deployment was deployed correctly
+      # abort after 120 seconds if it didn't
+      wait_until_ready: 120
+      chart: repository/helm/webhook-broadcaster
+      replace: true
+      force: true
+      override_values:
+         # Helm release has the branch name
+        - key: image.tag
+          path: tags/main
+          type: string
+      values:
+        - 'decrypted-config/webhook-broadcaster-values.yml'
+        - 'decrypted-config/webhook-broadcaster-secrets.yml'
     attempts: 0
     timeout: 1h
 
@@ -290,305 +417,3 @@ jobs:
         skip_download: true
       attempts: 0
       timeout: 1h
-
-- name: generate-concourse-pipeline
-  build_logs_to_retain: 50
-  plan:
-
-  - aggregate:
-
-    - get: concourse-generate-pipeline-dockerimage
-      trigger: true
-      params:
-        skip_download: true
-      attempts: 0
-      timeout: 1h
-
-    - get: concourse-pipeline-config
-      trigger: true
-      params:
-        # it's the infrastructure repo and there's a path filter, so very likely
-        # there are other commits on top
-        depth: 200
-      attempts: 0
-      timeout: 1h
-
-    - get: concourse-metadata
-      attempts: 0
-      timeout: 1h
-
-  - task: generate-concourse-pipeline
-    config:
-      inputs:
-        - name: concourse-pipeline-config
-      outputs:
-        - name: generated-pipeline
-      platform: linux
-      image_resource:
-        type: docker-image
-        source:
-          repository: eu.gcr.io/optiopay/concourse-generate-pipeline
-          tag: latest
-          username: ((gcr-username))
-          password: ((gcr-password))
-      run:
-        path: /bin/sh
-        args:
-          - -euc
-          - |
-            pipeline_file="$PWD/generated-pipeline/pipeline.yml"
-            generator_version_file="$PWD/generated-pipeline/generator-version.txt"
-
-            cd "concourse-pipeline-config"
-
-            # allow opting out from auto-generating the pipeline by removing
-            # the banner that warns that the file is generated
-            if ! grep -q '^[[:blank:]]*#.*generated by .* DO NOT EDIT' ci/pipeline.yml; then
-              echo "No banner found at the beginning of 'ci/pipeline.yml', will not re-generate it."
-              exit 0
-            fi
-
-            echo "Generating 'ci/pipeline.yml'..."
-            /concourse-generate-pipeline -o "$pipeline_file"
-
-            echo "Storing version of the generator script in a file..."
-            /concourse-generate-pipeline --version >"$generator_version_file"
-    attempts: 0
-    timeout: 1h
-
-  - task: create-pull-request
-    config:
-      inputs:
-        - name: generated-pipeline
-        - name: concourse-metadata
-        - name: concourse-pipeline-config
-      platform: linux
-      image_resource:
-        type: docker-image
-        source:
-          repository: eu.gcr.io/optiopay/github-hub
-          tag: latest
-          username: ((gcr-username))
-          password: ((gcr-password))
-      run:
-        path: /bin/bash
-        args:
-          - -euo
-          - pipefail
-          - -c
-          - |
-            pipeline_file="$PWD/generated-pipeline/pipeline.yml"
-
-            generator_version="$(< generated-pipeline/generator-version.txt)"
-
-            echo "Markdown snippet for the CI badge - you can use it in the README.md:"
-            echo "  [![build status]($(<concourse-metadata/atc-external-url)/api/v1/teams/$(<concourse-metadata/build-team-name)/pipelines/$(<concourse-metadata/build-pipeline-name)/jobs/master-build/badge)]($(<concourse-metadata/atc-external-url)/teams/$(<concourse-metadata/build-team-name)/pipelines/$(<concourse-metadata/build-pipeline-name)/jobs/master-build)"
-            echo ""
-
-            #TODO use the shorter form once https://github.com/SWCE/metadata-resource/pull/3 gets merged
-            #build_url="$(< concourse-metadata/build-url)"
-            build_url="$(< concourse-metadata/atc-external-url)/teams/$(< concourse-metadata/build-team-name)/pipelines/$(< concourse-metadata/build-pipeline-name)/jobs/$(< concourse-metadata/build-job-name)/builds/$(< concourse-metadata/build-name)"
-
-            if [ ! -f "$pipeline_file" ]; then
-              echo "No pipeline file was generated in the previous step(s)."
-              echo "Nothing to do."
-
-              exit 0
-            fi
-
-            cd "concourse-pipeline-config"
-
-            echo "Creating a new Git branch..."
-            subdir=""
-            git checkout -b "ci/auto-update-concourse-pipeline-${subdir:+${subdir//[^A-Za-z0-9_]/-}-}${generator_version}-$(date +%s)" master
-
-            echo "Adding the generated 'ci/pipeline.yml' to the Git index..."
-            cat "$pipeline_file" > ci/pipeline.yml
-            git add ci/pipeline.yml
-
-            if git diff-index --quiet --cached HEAD; then
-              echo "The freshly generated 'ci/pipeline.yml' is identical to the version that is already in 'master'."
-              echo "Nothing to do."
-
-              exit 0
-            fi
-
-            echo "Committing the changes to Git..."
-            pull_request_message="${subdir:-CI}: update pipeline using the latest template"$'\n\n'"The pipeline was re-generated using concourse-generate-pipeline version ${generator_version}."$'\n'"Concourse build: $build_url"
-            git commit --message "$pull_request_message"
-
-            echo "Pushing the Git commit and creating the PR..."
-            hub pull-request --push --reviewer='@optiopay/infrastructure' --message="$pull_request_message"
-      params:
-        GITHUB_TOKEN: ((github-optiobot-access-token))
-        SSH_PRIVATE_KEY: ((github-optiobot-private-key))
-        GIT_AUTHOR_NAME: Concourse CI
-        GIT_COMMITTER_NAME: Concourse CI
-    attempts: 0
-    timeout: 1h
-
-- name: pull-request-test-concourse-pipeline
-  build_logs_to_retain: 50
-  on_success:
-    do:
-      - put: pull-request-concourse-pipeline-config
-        params:
-          path: pull-request-concourse-pipeline-config
-          status: success
-          context: $BUILD_PIPELINE_NAME/pull-request-build
-        attempts: 0
-        timeout: 1h
-  on_failure:
-    do:
-      - put: pull-request-concourse-pipeline-config
-        params:
-          path: pull-request-concourse-pipeline-config
-          status: failure
-          context: $BUILD_PIPELINE_NAME/pull-request-build
-        attempts: 0
-        timeout: 1h
-  on_abort:
-    do:
-      - put: pull-request-concourse-pipeline-config
-        params:
-          path: pull-request-concourse-pipeline-config
-          status: failure
-          context: $BUILD_PIPELINE_NAME/pull-request-build
-        attempts: 0
-        timeout: 1h
-  plan:
-
-  - aggregate:
-
-    - do:
-
-      - get: pull-request-concourse-pipeline-config
-        trigger: true
-        version: every
-        attempts: 0
-        timeout: 1h
-
-      - put: pull-request-concourse-pipeline-config
-        params:
-          path: pull-request-concourse-pipeline-config
-          status: pending
-          context: $BUILD_PIPELINE_NAME/pull-request-build
-        attempts: 0
-        timeout: 1h
-
-    - get: concourse-pipeline-tool
-      params:
-        # it's the infrastructure repo and there's a path filter, so very likely
-        # there are other commits on top
-        depth: 200
-      attempts: 0
-      timeout: 1h
-
-    - get: concourse-metadata
-      attempts: 0
-      timeout: 1h
-
-  - task: set-concourse-pipeline
-    config:
-      inputs:
-        - name: concourse-pipeline-tool
-        - name: concourse-pipeline-config
-        - name: concourse-metadata
-      platform: linux
-      image_resource:
-        type: docker-image
-        source:
-          repository: eu.gcr.io/optiopay/toolbox
-          tag: latest
-          username: ((gcr-username))
-          password: ((gcr-password))
-      run:
-        path: /bin/sh
-        args:
-          - -euc
-          - |
-            concourse-pipeline-tool/bin/concourse-set-pipeline \
-              --dry-run \
-              --config \
-              concourse-pipeline-config/ci/pipeline.yml \
-              --team-name="$(cat concourse-metadata/build-team-name)"
-      params:
-        USERNAME: ((concourse-basic-auth-username))
-        PASSWORD: ((concourse-basic-auth-password))
-    attempts: 0
-    timeout: 1h
-    input_mapping:
-      concourse-pipeline-config: pull-request-concourse-pipeline-config
-
-- name: set-concourse-pipeline
-  build_logs_to_retain: 50
-  plan:
-
-  - aggregate:
-
-    - get: concourse-pipeline-config
-      trigger: true
-      params:
-        depth: 1
-      attempts: 0
-      timeout: 1h
-
-    - get: concourse-pipeline-tool
-      params:
-        # it's the infrastructure repo and there's a path filter, so very likely
-        # there are other commits on top
-        depth: 200
-      attempts: 0
-      timeout: 1h
-
-    - get: concourse-metadata
-      attempts: 0
-      timeout: 1h
-
-  - aggregate:
-
-    - task: set-concourse-pipeline
-      config:
-        inputs:
-          - name: concourse-pipeline-tool
-          - name: concourse-pipeline-config
-          - name: concourse-metadata
-        platform: linux
-        image_resource:
-          type: docker-image
-          source:
-            repository: eu.gcr.io/optiopay/toolbox
-            tag: latest
-            username: ((gcr-username))
-            password: ((gcr-password))
-        run:
-          path: /bin/sh
-          args:
-            - -euc
-            - |
-              concourse-pipeline-tool/bin/concourse-set-pipeline \
-                --non-interactive \
-                --config \
-                concourse-pipeline-config/ci/pipeline.yml \
-                --team-name="$(cat concourse-metadata/build-team-name)"
-        params:
-          USERNAME: ((concourse-basic-auth-username))
-          PASSWORD: ((concourse-basic-auth-password))
-      attempts: 0
-      timeout: 1h
-
-    - put: concourse-github-webhook
-      params:
-        webhooks:
-          - resource: pull-request
-            events:
-              - pull_request
-          - resource: repository
-            events:
-              - push
-      get_params:
-        skip_download: true
-      attempts: 0
-      timeout: 1h
-
-
