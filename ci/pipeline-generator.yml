@@ -1,8 +1,0 @@
-template_file: dockerimage.yml.tpl
-
-# GitHub has a limit of 20 webhooks per event type (per repo), and we have much
-# more than 20 'dockerfiles/*' projects, so we do not attempt to install any
-# unnecessary webhooks for this project
-skip_creating_webhooks_for_these_resources:
-  - concourse-pipeline-config
-  - pull-request-test-concourse-pipeline

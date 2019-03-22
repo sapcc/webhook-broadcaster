@@ -30,6 +30,6 @@ spec:
           - path: {{ $ingressPath }}
             backend:
               serviceName: {{ $fullName }}
-              servicePort: {{ .Values.service.port }}
+              servicePort: {{ $.Values.service.port }}
   {{- end }}
 {{- end }}
