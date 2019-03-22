@@ -1,0 +1,17 @@
+{{- if .Values.service }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "webhook-broadcaster.fullname" . }}
+  labels:
+{{ include "webhook-broadcaster.helm-labels" . | indent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.containerPort }}
+      protocol: TCP
+  selector:
+    app: {{ include "webhook-broadcaster.name" . }}
+    release: {{ .Release.Name }}
+{{- end }}

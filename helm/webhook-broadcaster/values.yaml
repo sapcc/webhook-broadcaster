@@ -1,0 +1,70 @@
+# Default values for webhook-broadcaster.
+
+replicaCount: 1
+
+image:
+  repository: eu.gcr.io/optiopay/webhook-broadcaster
+  #TODO: replace 'tag: PLEASE_PROVIDE_THE_TAG' with 'tag:' once Helm is upgraded to 2.11.0
+  #tag:
+  tag: PLEASE_PROVIDE_THE_TAG
+  pullPolicy: IfNotPresent
+
+containerPort: 8080
+
+ingress:
+  enabled: false
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+  # kubernetes.io/tls-acme: "true"
+  path: /
+  hosts:
+    - chart-example.local
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+service:
+  port: 80
+
+healthz: true
+
+envVars:
+  CONCOURSE_URL: ""
+
+envSecrets:
+  CONCOURSE_USER: ""
+  CONCOURSE_PASSWORD: ""
+
+secretVolumes:
+#  - name: token
+#    path: /token/
+#    files:
+#      - name: token_private_key.pem
+#        value: ""
+
+# this value is used instead of the chart name when naming k8s objects
+nameOverride:
+
+# this value is used instead of the release+chart name when naming k8s objects
+fullnameOverride:
+
+additionalLabels: {}
+
+# see https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+resources: {}
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
+
+# see https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#nodeselector
+nodeSelector: {}
+
+# see https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+tolerations: []
+
+# see https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+affinity: {}

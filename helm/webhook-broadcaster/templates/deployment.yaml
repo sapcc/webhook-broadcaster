@@ -1,0 +1,91 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: {{ include "webhook-broadcaster.fullname" . }}
+  labels:
+{{ include "webhook-broadcaster.helm-labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+{{ include "webhook-broadcaster.app-labels" . | indent 8 }}
+  template:
+    metadata:
+      labels:
+{{ include "webhook-broadcaster.app-labels" . | indent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ required "Please provide the image tag" .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.liveness }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{.Values.containerPort }}
+              initialDelay: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: {{.Values.containerPort }}
+              initialDelay: 5
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.containerPort }}
+          env:
+            - name: BLACKLIST
+              value: "/blacklist/ignore.csv"
+            {{- range $key, $val := .Values.envVars }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
+
+            {{- range $key, $val := .Values.envSecrets }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "webhook-broadcaster.name" $ }}
+                  key: {{ $key }}
+            {{- end }}
+          volumeMounts:
+            - name: blacklist-volume
+              mountPath: /blacklist/
+              readOnly: true
+{{- range  .Values.secretVolumes }}
+            - name: {{ .name }}
+              mountPath: {{ .path }}
+              readOnly: true
+{{- end }}
+
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+
+      volumes:
+        - name: blacklist-volume
+          configMap:
+            name: webhook-broadcaster
+            items:
+            - key: BLACKLIST
+              path: ./ignore.csv
+  {{- range  .Values.secretVolumes }}
+        - name: {{ .name }}
+          secret:
+            secretName: webhook-broadcaster
+            items:
+    {{- range .files }}
+            - key: {{ .name }}
+              path: {{ .name }}
+    {{- end }}
+  {{- end }}
