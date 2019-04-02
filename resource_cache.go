@@ -37,13 +37,11 @@ func UpdateCache(client concourse.Client) error {
 		}
 		log.Printf("Processing %d pipeline(s) for team %s", len(pipelines), team.Name)
 
-		//temporarly memorize pipelines from team to cleanup after the teams loop
-		for _, pipeline := range pipelines {
-			pipelinesByID[pipeline.ID] = pipeline
-		}
-
 		//update pipeline cache
 		for _, pipeline := range pipelines {
+			//temporarly memorize pipelines from team to cleanup after the teams loop
+			pipelinesByID[pipeline.ID] = pipeline
+
 			config, _, version, found, err := client.PipelineConfig(pipeline.Name)
 			if err != nil {
 				log.Printf("Failed to get pipeline %s/%s: %s", pipeline.TeamName, pipeline.Name, err)
