@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/go-concourse/concourse"
 )
 
 type Pipeline struct {
@@ -22,13 +21,22 @@ var (
 	resourceCache sync.Map
 )
 
-func UpdateCache(client concourse.Client) error {
+func UpdateCache(cclient client) error {
+	log.Printf("Starting cache update.")
+
+	client, err := cclient.RefreshClientWithToken()
+	if err != nil {
+		return fmt.Errorf("Failed to create Concourse client")
+	}
 
 	teams, err := client.ListTeams()
 	if err != nil {
 		return fmt.Errorf("Failed to list teams: %s", err)
 	}
 	pipelinesByID := make(map[int]atc.Pipeline, 50)
+
+	log.Printf("Updating %d teams.", len(teams))
+
 	for _, team := range teams {
 		client := client.Team(team.Name)
 		pipelines, err := client.ListPipelines()
@@ -80,6 +88,8 @@ func UpdateCache(client concourse.Client) error {
 		}
 		return true
 	})
+
+	log.Printf("Ending cache update.")
 	return nil
 }
 
