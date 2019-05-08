@@ -12,6 +12,8 @@ import (
 
 type client struct {
 	concourseURL string
+	username     string
+	password     string
 	oauth2Config *oauth2.Config
 	token        *oauth2.Token
 	ctx          context.Context
@@ -20,6 +22,8 @@ type client struct {
 func NewConcourseClient(concourseURL string, username string, password string) (*client, error) {
 	c := client{
 		concourseURL: concourseURL,
+		username:     username,
+		password:     password,
 	}
 
 	tokenEndPoint, err := url.Parse("sky/token")
@@ -45,15 +49,18 @@ func NewConcourseClient(concourseURL string, username string, password string) (
 	httpClient := &http.Client{Timeout: 2 * time.Second}
 	c.ctx = context.WithValue(context.Background(), oauth2.HTTPClient, &httpClient)
 
-	c.token, err = c.oauth2Config.PasswordCredentialsToken(c.ctx, username, password)
-	if err != nil {
-		return &client{}, err
-	}
-
 	return &c, nil
 }
 
 func (c *client) RefreshClientWithToken() (concourse.Client, error) {
+	if !c.token.Valid() {
+		var err error
+		c.token, err = c.oauth2Config.PasswordCredentialsToken(c.ctx, c.username, c.password)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	httpClient := c.oauth2Config.Client(c.ctx, c.token)
 	concourseClient := concourse.NewClient(c.concourseURL, httpClient, false)
 
