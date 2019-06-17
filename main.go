@@ -50,7 +50,7 @@ func main() {
 		log.Fatal("Missing one or more of required flags: -concourse-url -auth-user -auth-password")
 	}
 
-	concourseClient, err := NewConcourseClient(concourseURL, authUser, authPassword)
+	client, err := NewConcourseClient(concourseURL, authUser, authPassword)
 	if err != nil {
 		log.Fatalf("Failed to create Concourse client")
 	}
@@ -80,7 +80,7 @@ func main() {
 		tick := time.NewTicker(refreshInterval)
 		defer tick.Stop()
 		for {
-			UpdateCache(*concourseClient)
+			UpdateCache(*client)
 			select {
 			case <-tick.C:
 			case <-cancelCache:
