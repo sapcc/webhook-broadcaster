@@ -63,7 +63,7 @@ func (_ prometheusMetricsProvider) NewAddsMetric(name string) workqueue.CounterM
 	return adds
 }
 
-func (_ prometheusMetricsProvider) NewLatencyMetric(name string) workqueue.SummaryMetric {
+func (_ prometheusMetricsProvider) NewLatencyMetric(name string) workqueue.HistogramMetric {
 	latency := prometheus.NewHistogram(prometheus.HistogramOpts{
 		Subsystem: name,
 		Name:      "queue_latency_seconds",
@@ -74,7 +74,7 @@ func (_ prometheusMetricsProvider) NewLatencyMetric(name string) workqueue.Summa
 	return &summaryWrapper{latency}
 }
 
-func (_ prometheusMetricsProvider) NewWorkDurationMetric(name string) workqueue.SummaryMetric {
+func (_ prometheusMetricsProvider) NewWorkDurationMetric(name string) workqueue.HistogramMetric {
 	workDuration := prometheus.NewHistogram(prometheus.HistogramOpts{
 		Subsystem: name,
 		Name:      "work_duration_seconds",
@@ -93,4 +93,30 @@ func (_ prometheusMetricsProvider) NewRetriesMetric(name string) workqueue.Count
 	})
 	prometheus.Register(retries)
 	return retries
+}
+
+func (_ prometheusMetricsProvider) NewUnfinishedWorkSecondsMetric(name string) workqueue.SettableGaugeMetric {
+	unfinished := prometheus.NewGauge(prometheus.GaugeOpts{
+		Subsystem: name,
+		Name:      "unfinished",
+		Help:      "How many seconds of work has done that " +
+			"is in progress and hasn't been observed by work_duration. Large " +
+			"values indicate stuck threads. One can deduce the number of stuck " +
+			"threads by observing the rate at which this increases.",
+	})
+	prometheus.Register(unfinished)
+	return unfinished
+}
+
+func (_ prometheusMetricsProvider) NewLongestRunningProcessorSecondsMetric(name string) workqueue.SettableGaugeMetric {
+	longest := prometheus.NewGauge(prometheus.GaugeOpts{
+		Subsystem: name,
+		Name:      "longest",
+		Help:      "How many seconds of work has done that " +
+			"is in progress and hasn't been observed by work_duration. Large " +
+			"values indicate stuck threads. One can deduce the number of stuck " +
+			"threads by observing the rate at which this increases.",
+	})
+	prometheus.Register(longest)
+	return longest
 }
