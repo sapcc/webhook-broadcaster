@@ -44,8 +44,9 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 		uri, ok := resource.Source["uri"].(string)
 		if !ok {
 			var repository string
-			repository, ok = resource.Source["repository"].(string)
-			uri = "https://github.com/" + repository + ".git"
+			if repository, ok = resource.Source["repository"].(string); ok {
+				uri = "https://github.com/" + repository + ".git"
+			}
 		}
 
 		if ok {
