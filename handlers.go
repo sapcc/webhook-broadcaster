@@ -34,8 +34,6 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	log.Printf("Received webhhook for %s", pushEvent.Repository.CloneURL)
-
 	ScanResourceCache(func(pipeline Pipeline, resource atc.ResourceConfig) bool {
 		if resource.Type != "git" && resource.Type != "pull-request" {
 			return true
@@ -61,8 +59,6 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 				)
 				gh.queue.Add(webhookURL)
 			}
-		} else {
-			log.Printf("no uri or repository")
 		}
 
 		return true
