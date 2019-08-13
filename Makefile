@@ -1,6 +1,9 @@
+.PHONY: build docker push clean docker-clean
+
 PKG:=github.com/sapcc/webhook-broadcaster
 IMAGE:=sapcc/concourse-webhook-broadcaster
-VERSION:=0.6.2
+VERSION:=0.6.3
+
 build:
 	go build -v -o bin/webhook-broadcaster $(PKG)
 
@@ -11,3 +14,9 @@ docker:
 
 push:
 	docker push $(IMAGE):$(VERSION)
+
+clean:
+	rm -rf bin
+
+docker-clean:
+	docker rmi $(IMAGE):$(VERSION)
