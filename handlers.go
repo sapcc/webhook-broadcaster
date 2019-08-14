@@ -40,7 +40,16 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 		if resource.Type != "git" && resource.Type != "pull-request" {
 			return true
 		}
-		if uri, ok := resource.Source["uri"].(string); ok {
+
+		uri, ok := resource.Source["uri"].(string)
+		if !ok {
+			var repository string
+			if repository, ok = resource.Source["repository"].(string); ok {
+				uri = "https://github.com/" + repository + ".git"
+			}
+		}
+
+		if ok {
 			if SameGitRepository(uri, pushEvent.Repository.CloneURL) {
 				webhookURL := fmt.Sprintf("%s/api/v1/teams/%s/pipelines/%s/resources/%s/check/webhook?webhook_token=%s",
 					concourseURL,
