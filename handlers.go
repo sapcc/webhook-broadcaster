@@ -37,7 +37,7 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 	log.Printf("Received webhhook for %s", pushEvent.Repository.CloneURL)
 
 	ScanResourceCache(func(pipeline Pipeline, resource atc.ResourceConfig) bool {
-		if resource.Type != "git" && resource.Type != "pull-request" {
+		if resource.Type != "git" && resource.Type != "pull-request" && resource.Type != "git-proxy" {
 			return true
 		}
 		if uri, ok := resource.Source["uri"].(string); ok {
