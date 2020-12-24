@@ -80,7 +80,10 @@ func main() {
 		tick := time.NewTicker(refreshInterval)
 		defer tick.Stop()
 		for {
-			UpdateCache(*client)
+			err := UpdateCache(*client)
+			if err != nil {
+				panic(err)
+			}
 			select {
 			case <-tick.C:
 			case <-cancelCache:

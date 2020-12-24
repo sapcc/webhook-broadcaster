@@ -50,7 +50,7 @@ func UpdateCache(cclient client) error {
 			//temporarly memorize pipelines from team to cleanup after the teams loop
 			pipelinesByID[pipeline.ID] = pipeline
 
-			config, _, version, found, err := client.PipelineConfig(pipeline.Name)
+			config, version, found, err := client.PipelineConfig(pipeline.Ref())
 			if err != nil {
 				log.Printf("Failed to get pipeline %s/%s: %s", pipeline.TeamName, pipeline.Name, err)
 				continue

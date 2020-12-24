@@ -26,7 +26,7 @@ func NewConcourseClient(concourseURL string, username string, password string) (
 		password:     password,
 	}
 
-	tokenEndPoint, err := url.Parse("sky/token")
+	tokenEndPoint, err := url.Parse("sky/issuer/token")
 	if err != nil {
 		return &client{}, err
 	}
