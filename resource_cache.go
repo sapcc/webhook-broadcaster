@@ -26,7 +26,7 @@ func UpdateCache(cclient client) error {
 
 	client, err := cclient.RefreshClientWithToken()
 	if err != nil {
-		return fmt.Errorf("Failed to create Concourse client")
+		return fmt.Errorf("Failed to create Concourse client: %s", err)
 	}
 
 	teams, err := client.ListTeams()
@@ -50,7 +50,7 @@ func UpdateCache(cclient client) error {
 			//temporarly memorize pipelines from team to cleanup after the teams loop
 			pipelinesByID[pipeline.ID] = pipeline
 
-			config, _, version, found, err := client.PipelineConfig(pipeline.Name)
+			config, version, found, err := client.PipelineConfig(pipeline.Ref())
 			if err != nil {
 				log.Printf("Failed to get pipeline %s/%s: %s", pipeline.TeamName, pipeline.Name, err)
 				continue

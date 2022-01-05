@@ -1,6 +1,0 @@
-package: github.com/sapcc/webhook-broadcaster
-import:
- - package: k8s.io/client-go
-   version: release-8.0
-   subpackages:
-     - util/workqueue
