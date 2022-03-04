@@ -1,6 +1,6 @@
 PKG:=github.com/sapcc/webhook-broadcaster
-IMAGE:=sapcc/concourse-webhook-broadcaster
-VERSION:=0.8.0
+IMAGE?=sapcc/concourse-webhook-broadcaster
+VERSION:=0.8.3
 build:
 	go build -v -o bin/webhook-broadcaster $(PKG)
 

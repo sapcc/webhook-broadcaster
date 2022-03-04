@@ -59,9 +59,17 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 		}
 		if uri, ok := resource.Source["uri"].(string); ok {
 			if SameGitRepository(uri, pushEvent.Repository.CloneURL) {
-				if paths, ok := resource.Source["paths"].([]string); ok && len(paths) > 1 && !matchFiles(paths, filesChanged) {
-					log.Printf("Skipping resource %s due to path filter", resource.Name)
-					return true
+				if ps, ok := resource.Source["paths"].([]interface{}); ok && len(ps) > 1 {
+					paths := make([]string, 0, len(ps))
+					for _, p := range ps {
+						if pstring, ok := p.(string); ok {
+							paths = append(paths, pstring)
+						}
+					}
+					if len(paths) > 1 && !matchFiles(paths, filesChanged) {
+						log.Printf("Skipping resource %s/%s in team %s, due to path filter", pipeline.Name, resource.Name, pipeline.Team)
+						return true
+					}
 				}
 				webhookURL := fmt.Sprintf("%s/api/v1/teams/%s/pipelines/%s/resources/%s/check/webhook?webhook_token=%s",
 					concourseURL,
