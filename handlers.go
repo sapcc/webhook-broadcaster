@@ -18,10 +18,14 @@ type GithubWebhookHandler struct {
 func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	var pushEvent struct {
+		Ref        string `json:"ref"`
+		Before     string `json:"before"`
+		After      string `json:"after"`
 		Repository struct {
-			FullName string `json:"full_name"`
-			CloneURL string `json:"clone_url"`
-			GitURL   string `json:"git_url"`
+			FullName      string `json:"full_name"`
+			CloneURL      string `json:"clone_url"`
+			GitURL        string `json:"git_url"`
+			DefaultBranch string `json:"default_branch"`
 		} `json:"repository"`
 		Commits []struct {
 			ID            string   `json:"id"`
@@ -43,7 +47,11 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	log.Printf("Received webhhook for %s", pushEvent.Repository.CloneURL)
+	if pushEvent.After == "0000000000000000000000000000000000000000" {
+		log.Printf("Skipping deletion event for ref %s in %s", pushEvent.Ref, pushEvent.Repository.CloneURL)
+		return
+	}
+	log.Printf("Received webhhook for %s, ref %s, after %s", pushEvent.Repository.CloneURL, pushEvent.Ref, pushEvent.After)
 
 	//collect list of changed files
 	filesChanged := []string{}
@@ -59,6 +67,19 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 		}
 		if uri, ok := resource.Source["uri"].(string); ok {
 			if SameGitRepository(uri, pushEvent.Repository.CloneURL) {
+				if resource.Type == "git" || resource.Type == "git-proxy" {
+					//skip, if push is for branch not tracked by resource
+					branch, _ := resource.Source["branch"].(string)
+					if branch == "" {
+						branch = pushEvent.Repository.DefaultBranch
+					}
+					if strings.TrimPrefix(pushEvent.Ref, "refs/heads/") != branch {
+						log.Printf("Skipping resource %s/%s in team %s. Which is tracking branch %s", pipeline.Name, resource.Name, pipeline.Team, branch)
+						return true
+					}
+				}
+
+				//skip if path filter of resource does not match any of the changed files
 				if ps, ok := resource.Source["paths"].([]interface{}); ok && len(ps) > 1 {
 					paths := make([]string, 0, len(ps))
 					for _, p := range ps {
