@@ -30,6 +30,7 @@ var (
 	refreshInterval    time.Duration
 	webhookConcurrency int
 	flags              *flag.FlagSet
+	debug              bool
 )
 
 func init() {
@@ -41,6 +42,8 @@ func init() {
 	flags.StringVar(&authPassword, "auth-password", "", "Basic auth concourse password")
 	flags.DurationVar(&refreshInterval, "refresh-interval", 5*time.Minute, "Resource refresh interval")
 	flags.IntVar(&webhookConcurrency, "webhook-concurrency", 20, "How many resources to notify in parallel")
+	flags.BoolVar(&debug, "dry-run", false, "Dry-run. Don't call webhooks")
+
 }
 
 func main() {
@@ -140,4 +143,10 @@ func logstart(what string) string {
 }
 func logend(what string) {
 	log.Println("Stopped ", what)
+}
+
+func debugf(format string, args ...interface{}) {
+	if debug {
+		log.Printf(format, args...)
+	}
 }

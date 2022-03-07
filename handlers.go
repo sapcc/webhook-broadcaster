@@ -91,6 +91,9 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 						log.Printf("Skipping resource %s/%s in team %s, due to path filter", pipeline.Name, resource.Name, pipeline.Team)
 						return true
 					}
+					debugf("resource %s/%s has matching path filter: %#v", pipeline.Name, resource.Name, resource.Source)
+				} else {
+					debugf("resource %s/%s has no path filter: %#v", pipeline.Name, resource.Name, resource.Source)
 				}
 				webhookURL := fmt.Sprintf("%s/api/v1/teams/%s/pipelines/%s/resources/%s/check/webhook?webhook_token=%s",
 					concourseURL,
@@ -112,18 +115,22 @@ func matchFiles(patterns []string, files []string) bool {
 		for _, pattern := range patterns {
 			// direct match
 			if file == pattern {
+				debugf("direct match: %v == %v", file, pattern)
 				return true
 			}
 			// directory match
 			if strings.HasSuffix(pattern, "/") && strings.HasPrefix(file, pattern) {
+				debugf("directory match: %s matches %s", file, pattern)
 				return true
 			}
 			// directory without trainling / match
 			if strings.HasPrefix(file, pattern+"/") {
+				debugf("prefix match: %s matches %s", file, pattern)
 				return true
 			}
 			//last resort glob match
 			if ok, _ := filepath.Match(pattern, file); ok {
+				debugf("glob match: %s matches %s", file, pattern)
 				return true
 			}
 		}

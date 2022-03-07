@@ -100,6 +100,11 @@ var tokenRegexp = regexp.MustCompile(`webhook_token=[^&]+`)
 
 func (c *RequestWorkqueue) perform(url string) error {
 	redactedURL := tokenRegexp.ReplaceAllString(url, "webhook_token=[REDACTED]")
+	if debug {
+		log.Printf("DRY RUN: Calling POST %s", redactedURL)
+		return nil
+	}
+
 	log.Printf("Calling POST %s", redactedURL)
 	response, err := http.Post(url, "", nil)
 	if err != nil || response.StatusCode >= 400 {
