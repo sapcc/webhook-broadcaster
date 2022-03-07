@@ -21,6 +21,7 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 		Ref        string `json:"ref"`
 		Before     string `json:"before"`
 		After      string `json:"after"`
+		CompareURL string `json:"compare"`
 		Repository struct {
 			FullName      string `json:"full_name"`
 			CloneURL      string `json:"clone_url"`
@@ -51,7 +52,7 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 		log.Printf("Skipping deletion event for ref %s in %s", pushEvent.Ref, pushEvent.Repository.CloneURL)
 		return
 	}
-	log.Printf("Received webhhook for %s, ref %s, after %s", pushEvent.Repository.CloneURL, pushEvent.Ref, pushEvent.After)
+	log.Printf("Received webhhook for %s, ref %s, %s", pushEvent.Repository.CloneURL, pushEvent.Ref, pushEvent.CompareURL)
 
 	//collect list of changed files
 	filesChanged := []string{}
