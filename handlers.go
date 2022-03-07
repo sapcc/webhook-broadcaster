@@ -80,14 +80,14 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 				}
 
 				//skip if path filter of resource does not match any of the changed files
-				if ps, ok := resource.Source["paths"].([]interface{}); ok && len(ps) > 1 {
+				if ps, ok := resource.Source["paths"].([]interface{}); ok && len(ps) > 0 {
 					paths := make([]string, 0, len(ps))
 					for _, p := range ps {
 						if pstring, ok := p.(string); ok {
 							paths = append(paths, pstring)
 						}
 					}
-					if len(paths) > 1 && !matchFiles(paths, filesChanged) {
+					if len(paths) > 0 && !matchFiles(paths, filesChanged) {
 						log.Printf("Skipping resource %s/%s in team %s, due to path filter", pipeline.Name, resource.Name, pipeline.Team)
 						return true
 					}
