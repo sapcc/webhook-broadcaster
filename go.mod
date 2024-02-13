@@ -8,7 +8,7 @@ require (
 	github.com/concourse/concourse v1.6.1-0.20211026133350-e3d9f5bb1d41
 	github.com/oklog/run v1.1.0
 	github.com/prometheus/client_golang v1.11.1
-	golang.org/x/oauth2 v0.10.0
+	golang.org/x/oauth2 v0.17.0
 	k8s.io/apimachinery v0.29.1
 	k8s.io/client-go v0.29.1
 )
@@ -36,9 +36,9 @@ require (
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/tedsuo/rata v1.0.1-0.20170830210128-07d200713958 // indirect
 	github.com/vito/go-sse v0.0.0-20160212001227-fd69d275caac // indirect
-	golang.org/x/crypto v0.16.0 // indirect
-	golang.org/x/net v0.19.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/crypto v0.19.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
