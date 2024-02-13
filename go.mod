@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/concourse/concourse v1.6.1-0.20211026133350-e3d9f5bb1d41
 	github.com/oklog/run v1.1.0
-	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/client_golang v1.11.1
 	golang.org/x/oauth2 v0.0.0-20210628180205-a41e5a781914
 	k8s.io/apimachinery v0.22.2
 	k8s.io/client-go v0.22.2
