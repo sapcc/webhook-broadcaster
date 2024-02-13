@@ -7,7 +7,7 @@ toolchain go1.22.0
 require (
 	github.com/concourse/concourse v1.6.1-0.20211026133350-e3d9f5bb1d41
 	github.com/oklog/run v1.1.0
-	github.com/prometheus/client_golang v1.11.1
+	github.com/prometheus/client_golang v1.18.0
 	golang.org/x/oauth2 v0.17.0
 	k8s.io/apimachinery v0.29.1
 	k8s.io/client-go v0.29.1
@@ -17,7 +17,7 @@ require (
 	github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40 // indirect
-	github.com/cespare/xxhash/v2 v2.1.1 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/go-logr/logr v1.3.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
@@ -28,12 +28,13 @@ require (
 	github.com/mattn/go-colorable v0.1.11 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
+	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/onsi/gomega v1.29.0 // indirect
 	github.com/peterhellberg/link v1.1.0 // indirect
-	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.26.0 // indirect
-	github.com/prometheus/procfs v0.6.0 // indirect
+	github.com/prometheus/client_model v0.5.0 // indirect
+	github.com/prometheus/common v0.45.0 // indirect
+	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/tedsuo/rata v1.0.1-0.20170830210128-07d200713958 // indirect
 	github.com/vito/go-sse v0.0.0-20160212001227-fd69d275caac // indirect
 	golang.org/x/crypto v0.19.0 // indirect
