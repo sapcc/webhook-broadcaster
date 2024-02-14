@@ -1,6 +1,6 @@
 #!/bin/sh
 
-webhook-broadcaster -concourse-url "${CONCOURSE_URL}" \
+/webhook-broadcaster -concourse-url "${CONCOURSE_URL}" \
     -auth-user "${CONCOURSE_USER}" \
     -auth-password "${CONCOURSE_PASSWORD}" \
     -refresh-interval "${CONCOURSE_REFRESH_INTERVAL:-5m}" \

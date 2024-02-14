@@ -1,13 +1,25 @@
-PKG:=github.com/sapcc/webhook-broadcaster
-IMAGE?=sapcc/concourse-webhook-broadcaster
-VERSION:=0.8.6
-build:
-	go build -v -o bin/webhook-broadcaster $(PKG)
+TARGET = webhook-broadcaster
+GOTARGET = github.com/sapcc/$(TARGET)
+REGISTRY ?= sapcc
+VERSION ?= 0.9.0
+IMAGE = $(REGISTRY)/$(BIN)
+DOCKER ?= docker
 
-docker:
-	go test -v
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o bin/linux/webhook-broadcaster $(PKG)
-	docker build -t $(IMAGE):$(VERSION) .
+all: container
+
+test:
+	go test .
+
+container:
+	$(DOCKER) build --network=host -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
 
 push:
-	docker push $(IMAGE):$(VERSION)
+	$(DOCKER) push $(REGISTRY)/$(TARGET):latest
+	$(DOCKER) push $(REGISTRY)/$(TARGET):$(VERSION)
+
+.PHONY: all test container push
+
+clean:
+	rm -f $(TARGET)
+	$(DOCKER) rmi $(REGISTRY)/$(TARGET):latest
+	$(DOCKER) rmi $(REGISTRY)/$(TARGET):$(VERSION)
