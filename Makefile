@@ -1,7 +1,7 @@
 TARGET = webhook-broadcaster
 GOTARGET = github.com/sapcc/$(TARGET)
-REGISTRY ?= sapcc
-VERSION ?= 0.9.0
+REGISTRY ?= keppel.eu-de-1.cloud.sap/ccloud/concourse-webhook-broadcaster
+VERSION ?= 0.9.1
 IMAGE = $(REGISTRY)/$(BIN)
 DOCKER ?= docker
 
@@ -11,15 +11,15 @@ test:
 	go test .
 
 container:
-	$(DOCKER) build --network=host -t $(REGISTRY)/$(TARGET):latest -t $(REGISTRY)/$(TARGET):$(VERSION) .
+	$(DOCKER) build --network=host -t $(REGISTRY):latest -t $(REGISTRY):$(VERSION) .
 
 push:
-	$(DOCKER) push $(REGISTRY)/$(TARGET):latest
-	$(DOCKER) push $(REGISTRY)/$(TARGET):$(VERSION)
+	$(DOCKER) push $(REGISTRY):latest
+	$(DOCKER) push $(REGISTRY):$(VERSION)
 
 .PHONY: all test container push
 
 clean:
 	rm -f $(TARGET)
-	$(DOCKER) rmi $(REGISTRY)/$(TARGET):latest
-	$(DOCKER) rmi $(REGISTRY)/$(TARGET):$(VERSION)
+	$(DOCKER) rmi $(REGISTRY):latest
+	$(DOCKER) rmi $(REGISTRY):$(VERSION)
