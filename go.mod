@@ -6,7 +6,7 @@ require (
 	github.com/concourse/concourse v1.6.1-0.20240206223530-faed220548a3
 	github.com/oklog/run v1.1.0
 	github.com/prometheus/client_golang v1.18.0
-	golang.org/x/oauth2 v0.16.0
+	golang.org/x/oauth2 v0.19.0
 	k8s.io/apimachinery v0.29.1
 	k8s.io/client-go v0.29.1
 )
