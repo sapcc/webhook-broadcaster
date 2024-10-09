@@ -1,7 +1,7 @@
 TARGET = webhook-broadcaster
 GOTARGET = github.com/sapcc/$(TARGET)
 REGISTRY ?= keppel.eu-de-1.cloud.sap/ccloud/concourse-webhook-broadcaster
-VERSION ?= 0.9.3
+VERSION ?= 0.10.0
 IMAGE = $(REGISTRY)/$(BIN)
 DOCKER ?= docker
 
