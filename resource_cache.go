@@ -3,17 +3,19 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"sync"
 
 	"github.com/concourse/concourse/atc"
 )
 
 type Pipeline struct {
-	ID        int
-	Name      string
-	Version   string
-	Team      string
-	Resources []atc.ResourceConfig
+	ID          int
+	Name        string
+	Version     string
+	Team        string
+	Resources   []atc.ResourceConfig
+	QueryParams url.Values
 }
 
 var (
@@ -60,10 +62,11 @@ func UpdateCache(cclient client) error {
 				//add or replace cache for pipeline
 				if !inCache || cachedPipeline.(Pipeline).Version != version {
 					newCacheObj := Pipeline{
-						ID:      pipeline.ID,
-						Name:    pipeline.Name,
-						Team:    pipeline.TeamName,
-						Version: version,
+						ID:          pipeline.ID,
+						Name:        pipeline.Name,
+						Team:        pipeline.TeamName,
+						Version:     version,
+						QueryParams: pipeline.Ref().QueryParams(),
 					}
 					for _, resource := range config.Resources {
 						//Skip resources without webhook tokens

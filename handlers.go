@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -96,12 +97,19 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 				} else {
 					debugf("resource %s/%s has no path filter: %#v", pipeline.Name, resource.Name, resource.Source)
 				}
-				webhookURL := fmt.Sprintf("%s/api/v1/teams/%s/pipelines/%s/resources/%s/check/webhook?webhook_token=%s",
+				queryParams := url.Values{}
+				for key, vals := range pipeline.QueryParams {
+					for _, val := range vals {
+						queryParams.Add(key, val)
+					}
+				}
+				queryParams.Set("webhook_token", resource.WebhookToken)
+				webhookURL := fmt.Sprintf("%s/api/v1/teams/%s/pipelines/%s/resources/%s/check/webhook?%s",
 					concourseURL,
 					pipeline.Team,
 					pipeline.Name,
 					resource.Name,
-					resource.WebhookToken,
+					queryParams.Encode(),
 				)
 				gh.queue.Add(webhookURL)
 			}
