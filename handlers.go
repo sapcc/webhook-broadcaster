@@ -67,7 +67,7 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 		if resource.Type != "git" && resource.Type != "pull-request" && resource.Type != "git-proxy" {
 			return true
 		}
-		if uri, ok := resource.Source["uri"].(string); ok {
+		if uri, ok := ConstructGitHubUriFromConfig(resource); ok {
 			if SameGitRepository(uri, pushEvent.Repository.CloneURL) {
 				if resource.Type == "git" || resource.Type == "git-proxy" {
 					//skip, if push is for branch not tracked by resource
