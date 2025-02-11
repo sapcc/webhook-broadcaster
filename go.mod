@@ -2,7 +2,7 @@ module github.com/sapcc/webhook-broadcaster
 
 go 1.23
 
-toolchain go1.22.2
+toolchain go1.24.0
 
 require (
 	github.com/concourse/concourse v1.6.1-0.20240206223530-faed220548a3
