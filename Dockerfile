@@ -1,4 +1,4 @@
-FROM golang:1.23 AS builder
+FROM golang:1.24 AS builder
 
 WORKDIR /go/src/github.com/sapcc/webhook-broadcaster
 ADD go.mod go.sum ./
