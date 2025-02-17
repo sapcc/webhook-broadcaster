@@ -1,14 +1,16 @@
 module github.com/sapcc/webhook-broadcaster
 
-go 1.23
+go 1.23.0
+
+toolchain go1.24.0
 
 require (
 	github.com/concourse/concourse v1.6.1-0.20240206223530-faed220548a3
 	github.com/oklog/run v1.1.0
 	github.com/prometheus/client_golang v1.20.5
 	golang.org/x/oauth2 v0.23.0
-	k8s.io/apimachinery v0.31.1
-	k8s.io/client-go v0.31.1
+	k8s.io/apimachinery v0.32.2
+	k8s.io/client-go v0.32.2
 )
 
 require (
@@ -30,7 +32,7 @@ require (
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/onsi/gomega v1.34.2 // indirect
+	github.com/onsi/gomega v1.35.1 // indirect
 	github.com/peterhellberg/link v1.2.0 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.60.0 // indirect
@@ -47,6 +49,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6 // indirect
+	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
