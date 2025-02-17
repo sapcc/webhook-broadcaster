@@ -1,0 +1,31 @@
+# Configuration file for <https://github.com/sapcc/go-makefile-maker>
+metadata:
+  url: https://github.com/sapcc/webhook-broadcaster
+binaries:
+  - name: webhook-broadcaster
+    fromPackage: .
+    installTo: bin/
+dockerfile:
+  enabled: true
+  runAsRoot: true
+golang:
+  setGoModVersion: true
+  enableVendoring: true
+golangciLint:
+  createConfig: true
+githubWorkflow:
+  ci:
+    enabled: true
+  global:
+    defaultBranch: master
+  pushContainerToGhcr:
+    enabled: true
+    platforms: "linux/amd64"
+    tagStrategy:
+      - edge
+      - latest
+      - semver
+renovate:
+  enabled: true
+  assignees:
+    - jknipper

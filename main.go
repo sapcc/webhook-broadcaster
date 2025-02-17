@@ -13,6 +13,7 @@ import (
 	"github.com/oklog/run"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sapcc/go-api-declarations/bininfo"
 )
 
 type resource struct {
@@ -31,6 +32,7 @@ var (
 	webhookConcurrency int
 	flags              *flag.FlagSet
 	debug              bool
+	printVersion       bool
 )
 
 func init() {
@@ -43,11 +45,16 @@ func init() {
 	flags.DurationVar(&refreshInterval, "refresh-interval", 5*time.Minute, "Resource refresh interval")
 	flags.IntVar(&webhookConcurrency, "webhook-concurrency", 20, "How many resources to notify in parallel")
 	flags.BoolVar(&debug, "dry-run", false, "Dry-run. Don't call webhooks")
-
+	flags.BoolVar(&printVersion, "version", false, "Print version info")
 }
 
 func main() {
 	flags.Parse(os.Args[1:])
+
+	if printVersion {
+		log.Printf("webhook-broadcaster version %s", bininfo.Version())
+		os.Exit(0)
+	}
 
 	if concourseURL == "" || authUser == "" || authPassword == "" {
 		log.Fatal("Missing one or more of required flags: -concourse-url -auth-user -auth-password")
