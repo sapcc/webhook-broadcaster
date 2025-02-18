@@ -8,6 +8,7 @@ require (
 	github.com/concourse/concourse v1.6.1-0.20240206223530-faed220548a3
 	github.com/oklog/run v1.1.0
 	github.com/prometheus/client_golang v1.20.5
+	github.com/sapcc/go-api-declarations v1.13.2
 	golang.org/x/oauth2 v0.26.0
 	k8s.io/apimachinery v0.32.2
 	k8s.io/client-go v0.32.2
@@ -35,13 +36,12 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.60.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/sapcc/go-api-declarations v1.13.2 // indirect
 	github.com/tedsuo/rata v1.0.1-0.20170830210128-07d200713958 // indirect
 	github.com/vito/go-sse v1.1.2 // indirect
-	golang.org/x/crypto v0.28.0 // indirect
-	golang.org/x/net v0.30.0 // indirect
-	golang.org/x/sys v0.26.0 // indirect
-	golang.org/x/text v0.19.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.7.0 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
