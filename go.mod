@@ -2,14 +2,14 @@ module github.com/sapcc/webhook-broadcaster
 
 go 1.24
 
-toolchain go1.24.0
+toolchain go1.24.1
 
 require (
 	github.com/concourse/concourse v1.6.1-0.20240206223530-faed220548a3
 	github.com/oklog/run v1.1.0
-	github.com/prometheus/client_golang v1.20.5
+	github.com/prometheus/client_golang v1.21.1
 	github.com/sapcc/go-api-declarations v1.13.2
-	golang.org/x/oauth2 v0.26.0
+	golang.org/x/oauth2 v0.27.0
 	k8s.io/apimachinery v0.32.2
 	k8s.io/client-go v0.32.2
 )
