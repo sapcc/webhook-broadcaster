@@ -13,7 +13,8 @@ import (
 )
 
 type GithubWebhookHandler struct {
-	queue *RequestWorkqueue
+	queue               *RequestWorkqueue
+	resourceURIPatterns map[string][]string
 }
 
 func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -64,59 +65,72 @@ func (gh *GithubWebhookHandler) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 	}
 
 	ScanResourceCache(func(pipeline Pipeline, resource atc.ResourceConfig) bool {
-		if resource.Type != "git" && resource.Type != "pull-request" && resource.Type != "git-proxy" {
-			return true
-		}
-		if uri, ok := resource.Source["uri"].(string); ok {
-			if SameGitRepository(uri, pushEvent.Repository.CloneURL) {
-				if resource.Type == "git" || resource.Type == "git-proxy" {
-					//skip, if push is for branch not tracked by resource
-					branch, _ := resource.Source["branch"].(string)
-					if branch == "" {
-						branch = pushEvent.Repository.DefaultBranch
-					}
-					if strings.TrimPrefix(pushEvent.Ref, "refs/heads/") != branch {
-						log.Printf("Skipping resource %s/%s in team %s. Which is tracking branch %s", pipeline.Name, resource.Name, pipeline.Team, branch)
-						return true
-					}
-				}
+		if uri, ok := gh.matchResourceURI(resource, pushEvent.Repository.CloneURL); ok {
+			debugf("%s/%s(%s): matched resource uri %s to %s", pipeline.Name, resource.Name, resource.Type, uri, pushEvent.Repository.CloneURL)
 
-				//skip if path filter of resource does not match any of the changed files
-				if ps, ok := resource.Source["paths"].([]interface{}); ok && len(ps) > 0 {
-					paths := make([]string, 0, len(ps))
-					for _, p := range ps {
-						if pstring, ok := p.(string); ok {
-							paths = append(paths, pstring)
-						}
-					}
-					if len(paths) > 0 && !matchFiles(paths, filesChanged) {
-						log.Printf("Skipping resource %s/%s in team %s, due to path filter", pipeline.Name, resource.Name, pipeline.Team)
-						return true
-					}
-					debugf("resource %s/%s has matching path filter: %#v", pipeline.Name, resource.Name, resource.Source)
-				} else {
-					debugf("resource %s/%s has no path filter: %#v", pipeline.Name, resource.Name, resource.Source)
+			if resource.Type == "git" || resource.Type == "git-proxy" {
+				//skip, if push is for branch not tracked by resource
+				branch, _ := resource.Source["branch"].(string)
+				if branch == "" {
+					branch = pushEvent.Repository.DefaultBranch
 				}
-				queryParams := url.Values{}
-				for key, vals := range pipeline.QueryParams {
-					for _, val := range vals {
-						queryParams.Add(key, val)
-					}
+				if strings.TrimPrefix(pushEvent.Ref, "refs/heads/") != branch {
+					log.Printf("Skipping resource %s/%s in team %s. Which is tracking branch %s", pipeline.Name, resource.Name, pipeline.Team, branch)
+					return true
 				}
-				queryParams.Set("webhook_token", resource.WebhookToken)
-				webhookURL := fmt.Sprintf("%s/api/v1/teams/%s/pipelines/%s/resources/%s/check/webhook?%s",
-					concourseURL,
-					pipeline.Team,
-					pipeline.Name,
-					resource.Name,
-					queryParams.Encode(),
-				)
-				gh.queue.Add(webhookURL)
 			}
+
+			//skip if path filter of resource does not match any of the changed files
+			if ps, ok := resource.Source["paths"].([]interface{}); ok && len(ps) > 0 {
+				paths := make([]string, 0, len(ps))
+				for _, p := range ps {
+					if pstring, ok := p.(string); ok {
+						paths = append(paths, pstring)
+					}
+				}
+				if len(paths) > 0 && !matchFiles(paths, filesChanged) {
+					log.Printf("Skipping resource %s/%s in team %s, due to path filter", pipeline.Name, resource.Name, pipeline.Team)
+					return true
+				}
+				debugf("resource %s/%s has matching path filter: %#v", pipeline.Name, resource.Name, resource.Source)
+			} else {
+				debugf("resource %s/%s has no path filter: %#v", pipeline.Name, resource.Name, resource.Source)
+			}
+			queryParams := url.Values{}
+			for key, vals := range pipeline.QueryParams {
+				for _, val := range vals {
+					queryParams.Add(key, val)
+				}
+			}
+			queryParams.Set("webhook_token", resource.WebhookToken)
+			webhookURL := fmt.Sprintf("%s/api/v1/teams/%s/pipelines/%s/resources/%s/check/webhook?%s",
+				concourseURL,
+				pipeline.Team,
+				pipeline.Name,
+				resource.Name,
+				queryParams.Encode(),
+			)
+			gh.queue.Add(webhookURL)
 		}
 		return true
 	})
 
+}
+
+func (gh *GithubWebhookHandler) matchResourceURI(resource atc.ResourceConfig, repoCloneURL string) (string, bool) {
+	patterns, ok := gh.resourceURIPatterns[resource.Type]
+	if !ok {
+		// Unsupported resource type
+		return "", false
+	}
+	for _, pattern := range patterns {
+		if uri, ok := ExpandPattern(pattern, resource.Source); ok {
+			if SameGitRepository(uri, repoCloneURL) {
+				return uri, true
+			}
+		}
+	}
+	return "", false
 }
 
 func matchFiles(patterns []string, files []string) bool {
