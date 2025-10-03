@@ -53,6 +53,21 @@ Usage
 2. Create a github webhook for push events pointing it to `http://webhook-broadcaster.somewhere:8080/github`
 3. Make sure resources of type `git` have a `webhook_token` configured
 
+Configurability
+===============
+The webhook-broadcaster natively supports resource types `git`, `git-proxy` and `pull-request`. As resource type names are purely conventional (except for a few core types) and new resource types can be declared in Concourse pipelines using a `resource_types` block, your environment may have additional types. In addition, different resource implementations use different config attributes to identify which Git repository they operate on. The core resource types all use `uri` to hold the full URI. Other popular resource types use other attributes, often in combination (e.g. `repository` on `org/repo` form, or split up into `owner` and `repository`).
+
+Use the `--add-resource-uri-pattern=<name>:<pattern>` option to register a new type-name and uri-pattern combination with webhook-broadcaster. It can be specified multiple times. For example:
+
+```
+--add-resource-uri-pattern=pull-request:https://github.com/{repository} \
+--add-resource-uri-pattern=pull-request:https://private-repo.local/{repository} \
+--add-resource-uri-pattern=gh-release:https://private-repo.local/{owner}/{repository}
+...
+```
+
+The `{placeholder}` tokens for the matching resource type name are expanded directly from the resource `source:` map defined in the pipeline. When scanning resources, the broadcaster will try to match all expansions for the resource type against the push-event repository URL, in the order they're defined on the command line. If multiple pattern should match, only the first match will be considered.
+
 Compatibility
 =============
 * webhook-broadcaster should work with concourse `>=4.x`. There is a branch https://github.com/sapcc/webhook-broadcaster/tree/concourse-3.x that supports concourse `3.x`.

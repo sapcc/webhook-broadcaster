@@ -2,11 +2,13 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -23,16 +25,46 @@ type resource struct {
 	token    string
 }
 
+// flag.Value for "type:pattern" multi-options
+type resourcePatternsValue map[string][]string
+
+func (rp *resourcePatternsValue) String() string {
+	var specs []string
+	for resourceType, patterns := range *rp {
+		for _, pattern := range patterns {
+			specs = append(specs, fmt.Sprintf("%s:%s", resourceType, pattern))
+		}
+	}
+	return strings.Join(specs, ", ")
+}
+
+func (rp *resourcePatternsValue) Set(value string) error {
+	parts := strings.SplitN(value, ":", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid resource-type:pattern format: %s", value)
+	}
+
+	resourceType := parts[0]
+	pattern := parts[1]
+	(*rp)[resourceType] = append((*rp)[resourceType], pattern)
+	return nil
+}
+
 var (
-	listenAddr         string
-	concourseURL       string
-	authUser           string
-	authPassword       string
-	refreshInterval    time.Duration
-	webhookConcurrency int
-	flags              *flag.FlagSet
-	debug              bool
-	printVersion       bool
+	listenAddr          string
+	concourseURL        string
+	authUser            string
+	authPassword        string
+	refreshInterval     time.Duration
+	webhookConcurrency  int
+	flags               *flag.FlagSet
+	debug               bool
+	printVersion        bool
+	resourceURIPatterns = resourcePatternsValue{
+		"git":          {"{uri}"},
+		"git-proxy":    {"{uri}"},
+		"pull-request": {"{uri}"},
+	}
 )
 
 func init() {
@@ -46,6 +78,7 @@ func init() {
 	flags.IntVar(&webhookConcurrency, "webhook-concurrency", 20, "How many resources to notify in parallel")
 	flags.BoolVar(&debug, "dry-run", false, "Dry-run. Don't call webhooks")
 	flags.BoolVar(&printVersion, "version", false, "Print version info")
+	flags.Var(&resourceURIPatterns, "add-resource-uri-pattern", "Add new resource type and associated URI pattern, e.g. 'pull-request:http://github.com/{owner}/{repo}'")
 }
 
 func main() {
@@ -59,6 +92,8 @@ func main() {
 	if concourseURL == "" || authUser == "" || authPassword == "" {
 		log.Fatal("Missing one or more of required flags: -concourse-url -auth-user -auth-password")
 	}
+
+	log.Printf("Registered resource-types/uri-patterns: %s", &resourceURIPatterns)
 
 	client, err := NewConcourseClient(concourseURL, authUser, authPassword)
 	if err != nil {
@@ -132,7 +167,10 @@ func main() {
 			[]string{"code", "method"},
 		)
 		prometheus.Register(requestCounter)
-		ghHandler := promhttp.InstrumentHandlerCounter(requestCounter, &GithubWebhookHandler{requestQueue})
+		ghHandler := promhttp.InstrumentHandlerCounter(requestCounter, &GithubWebhookHandler{
+			requestQueue,
+			resourceURIPatterns,
+		})
 		mux.Handle("/github", ghHandler)
 		mux.Handle("/metrics", promhttp.Handler())
 		return http.Serve(ln, mux)
