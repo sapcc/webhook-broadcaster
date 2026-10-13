@@ -1,8 +1,6 @@
 module github.com/sapcc/webhook-broadcaster
 
-go 1.24
-
-toolchain go1.24.0
+go 1.26.0
 
 require (
 	github.com/concourse/concourse v1.6.1-0.20240206223530-faed220548a3
@@ -38,10 +36,10 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/tedsuo/rata v1.0.1-0.20170830210128-07d200713958 // indirect
 	github.com/vito/go-sse v1.1.2 // indirect
-	golang.org/x/crypto v0.31.0 // indirect
-	golang.org/x/net v0.33.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/crypto v0.56.0 // indirect
+	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 	golang.org/x/time v0.7.0 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
