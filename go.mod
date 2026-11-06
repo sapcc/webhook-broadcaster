@@ -1,8 +1,6 @@
 module github.com/sapcc/webhook-broadcaster
 
-go 1.24
-
-toolchain go1.24.0
+go 1.25
 
 require (
 	github.com/concourse/concourse v1.6.1-0.20240206223530-faed220548a3
@@ -25,7 +23,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/jessevdk/go-flags v1.6.1 // indirect
-	github.com/klauspost/compress v1.17.10 // indirect
+	github.com/klauspost/compress v1.20.2 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
